@@ -62,8 +62,8 @@ To run the server on port 8080 with 8 worker threads, a buffer of 16 slots, and 
 
 ## How to Test
 
-1.  **Run the server** in one terminal window using one of the commands above.
-2.  **Open a new terminal** to run the client.
+1.  **Run the server** in one terminal window.
+2.  **Open new terminals** to run the client(s).
 
 ### Simple Test
 
@@ -77,20 +77,40 @@ Request the file using `wclient`:
 ./wclient localhost 10000 /index.html
 ```
 
-### Concurrency Test
+### Concurrency and Scheduling Tests
 
-To see the concurrency and scheduling policies in action, you can use the `spin.cgi` script. The following test script (`test_sff.sh`) can be used to simulate a "traffic jam" of requests and verify the SFF policy.
-
+To see the concurrency and scheduling policies in action, you will need the `spin.cgi` script. First, make sure it is executable by running this command once:
 ```bash
-#!/bin/bash
-
-# This script sends multiple requests to a server with 2 threads
-# to demonstrate that SFF will prioritize the smaller index.html file.
-
-./wclient localhost 10000 "/spin.cgi?5" & 
-./wclient localhost 10000 "/spin.cgi?5" &
-./wclient localhost 10000 /index.html &
-./wclient localhost 10000 "/spin.cgi?4" &
-
-wait
+chmod +x spin.cgi
 ```
+
+#### Testing SFF (Smallest File First)
+
+The goal is to show that SFF will serve a short request before a long one, even if the long one arrived first in the queue.
+
+1.  Start the server with multiple threads in SFF mode: `./wserver -t 2 -s SFF`
+2.  Create and run a test script (`test_sff.sh`) to send a "traffic jam" of requests:
+    ```bash
+    #!/bin/bash
+    ./wclient localhost 10000 "/spin.cgi?5" & 
+    ./wclient localhost 10000 "/spin.cgi?5" &
+    ./wclient localhost 10000 /index.html &
+    ./wclient localhost 10000 "/spin.cgi?4" &
+    wait
+    ```
+3.  Observe the server's output to confirm that `index.html` is chosen from the buffer before the other `spin` requests that are waiting.
+
+#### Testing FIFO (First-In-First-Out)
+
+The goal is to show that a long request will block a subsequent short request when no threads are available.
+
+1.  Start the server with only **one thread** in FIFO mode: `./wserver -t 1 -s FIFO`
+2.  In a new terminal (Terminal A), send a long-running request:
+    ```bash
+    ./wclient localhost 10000 "/spin.cgi?5"
+    ```
+3.  Immediately after, in another new terminal (Terminal B), send a short request:
+    ```bash
+    ./wclient localhost 10000 /index.html
+    ```
+4.  You will see that the request in Terminal B waits for the first request to complete before it is served.
