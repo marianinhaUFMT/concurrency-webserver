@@ -85,11 +85,11 @@ To see the concurrency and scheduling policies in action, you can use the `spin.
 #!/bin/bash
 
 # This script sends multiple requests to a server with 2 threads
-# to demonstrate that SFF will prioritize the smaller home.html file.
+# to demonstrate that SFF will prioritize the smaller index.html file.
 
 ./wclient localhost 10000 "/spin.cgi?5" & 
 ./wclient localhost 10000 "/spin.cgi?5" &
-./wclient localhost 10000 /home.html &
+./wclient localhost 10000 /index.html &
 ./wclient localhost 10000 "/spin.cgi?4" &
 
 wait
