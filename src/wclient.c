@@ -29,12 +29,13 @@
 void client_send(int fd, char *filename) {
     char buf[MAXBUF];
     char hostname[MAXBUF];
-    
+    int len;
+
     gethostname_or_die(hostname, MAXBUF);
     
-    /* Form and send the HTTP request */
-    sprintf(buf, "GET %s HTTP/1.1\n", filename);
-    sprintf(buf, "%shost: %s\n\r\n", buf, hostname);
+    // Create the HTTP request
+    len = snprintf(buf, MAXBUF, "GET %s HTTP/1.1\n", filename);
+    snprintf(buf + len, MAXBUF - len, "host: %s\n\r\n", hostname);
     write_or_die(fd, buf, strlen(buf));
 }
 

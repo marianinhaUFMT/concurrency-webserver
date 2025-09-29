@@ -54,6 +54,7 @@ void request_read_headers(int fd) {
 // Return 1 if static, 0 if dynamic content
 // Calculates filename (and cgiargs, for dynamic) from uri
 //
+
 int request_parse_uri(char *uri, char *filename, char *cgiargs) {
     char *ptr;
     
@@ -156,6 +157,11 @@ void request_handle(int fd) {
 	request_error(fd, method, "501", "Not Implemented", "server does not implement this method");
 	return;
     }
+    // Prevent path traversal attacks
+    if (strstr(uri, "..")) {
+        request_error(fd, uri, "403", "Forbidden", "Path Traversal attempt detected.");
+        return;
+    }
     request_read_headers(fd);
     
     is_static = request_parse_uri(uri, filename, cgiargs);
@@ -192,6 +198,11 @@ void request_handle_sff(int fd, char* uri, char* method) {
     
     if (strcasecmp(method, "GET")) {
         request_error(fd, method, "501", "Not Implemented", "server does not implement this method");
+        return;
+    }
+    // Prevent path traversal attacks
+    if (strstr(uri, "..")) {
+        request_error(fd, uri, "403", "Forbidden", "Path Traversal attempt detected.");
         return;
     }
     request_read_headers(fd);
